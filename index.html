@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ Luyện tập Tiếng Đức (V7 - Có Ghi âm)</title>
+    <title>Công cụ Luyện tập Tiếng Đức (V8 - Sửa lỗi an toàn)</title>
     <style>
         body {
             font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;
@@ -73,7 +73,7 @@
 <body>
 
     <div class="container">
-        <h1>Công cụ Luyện tập Tiếng Đức (V7 - Có Ghi âm)</h1>
+        <h1>Công cụ Luyện tập Tiếng Đức (V8 - Có Ghi âm)</h1>
         
         <div class="controls">
             <p>Chọn các file <strong>chuong-*.html</strong> của bạn:</p>
@@ -256,7 +256,6 @@
                         const qText = getCleanText(qLineHTML);
                         const aText = getCleanText(aLineHTML);
                         if (qText && aText) {
-                            // *** SỬA LỖI V6: Gán đúng tên biến ***
                             allPairs.push({ 
                                 qHTML: qLineHTML, 
                                 aHTML: aLineHTML, 
@@ -287,7 +286,6 @@
             currentPairIndex = index;
             const pair = allPairs[index];
 
-            // *** SỬA LỖI V4: "classclass" đã được sửa thành "class" ***
             currentPairContainer.innerHTML = `
                 <div class="dialogue-pair">
                     <div class="line question">
@@ -325,6 +323,12 @@
         });
 
         function applyModeLogic() {
+            // *** SỬA LỖI (V8): Thêm "cầu dao an toàn" ***
+            // Chặn hàm chạy nếu dữ liệu chưa sẵn sàng (để sửa lỗi 'Cannot read... qText')
+            if (allPairs.length === 0 || !allPairs[currentPairIndex]) {
+                return;
+            }
+
             const isPractice = modePractice.checked;
             
             practiceOptions.disabled = !isPractice;
@@ -339,13 +343,13 @@
                 if (document.getElementById('show-q').checked) {
                     container.classList.remove('show-answer');
                     container.classList.add('show-question');
-                    if (allPairs[currentPairIndex]) {
+                    if (allPairs[currentPairIndex]) { // Kiểm tra lại cho chắc
                         playSpeech(allPairs[currentPairIndex].qText);
                     }
                 } else {
                     container.classList.remove('show-question');
                     container.classList.add('show-answer');
-                    if (allPairs[currentPairIndex]) {
+                    if (allPairs[currentPairIndex]) { // Kiểm tra lại cho chắc
                         playSpeech(allPairs[currentPairIndex].aText);
                     }
                 }
@@ -392,6 +396,11 @@
                 const transcript = event.results[0][0].transcript;
                 practiceTranscript.textContent = transcript;
                 
+                // *** SỬA LỖI (V8): Thêm "cầu dao an toàn" ***
+                if (allPairs.length === 0 || !allPairs[currentPairIndex]) {
+                    return;
+                }
+
                 let originalText = '';
                 if (document.getElementById('show-q').checked) {
                     originalText = allPairs[currentPairIndex].aText;
@@ -428,7 +437,6 @@
                             alert("Bạn cần cấp phép cho trình duyệt sử dụng micro.");
                         });
                 } catch (e) {
-                    // Lỗi này xảy ra nếu đang ghi âm mà bấm lần nữa
                     console.warn("Lỗi khi bắt đầu ghi âm (có thể đã chạy): ", e.message);
                 }
             }
