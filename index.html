@@ -104,13 +104,13 @@
         
         /* Styles cho tính năng mới */
         .practice-btn.play {
-            background-color: #007bff; /* Xanh */
+            background-color: #007bff;
         }
         .practice-btn.record {
-            background-color: #dc3545; /* Đỏ */
+            background-color: #dc3545;
         }
         .practice-btn.recording {
-            background-color: #ffc107; /* Vàng */
+            background-color: #ffc107;
             color: #333;
         }
         .user-transcription {
@@ -123,7 +123,7 @@
             font-size: 0.95em;
         }
         .user-transcription .correct-text {
-            color: #666; /* Màu xám cho câu gốc */
+            color: #666; 
         }
         .user-transcription .user-text {
             font-style: italic;
@@ -307,16 +307,16 @@
                 oscillator.stop(audioCtx.currentTime + 0.15); 
             }
 
-            // Chuẩn hóa văn bản: bỏ dấu câu, dấu nháy đơn, nháy cong
+            // Chuẩn hóa văn bản
             function normalizeText(text) {
                 if (!text) return '';
                 return text.toLowerCase()
                            .replace(/[.,!?;:\[\]'’]/g, '') // Bỏ hết dấu câu, dấu nháy đơn ' và nháy cong ’
-                           .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng
+                           .replace(/\s+/g, ' ') 
                            .trim();
             }
 
-            // *** HÀM MỚI: TÍNH ĐIỂM VÀ SO SÁNH ***
+            // Hàm tính điểm và so sánh chi tiết
             function calculateDiff(userText, correctText) {
                 const normCorrect = normalizeText(correctText);
                 const normUser = normalizeText(userText);
@@ -335,12 +335,10 @@
                         diffHTML += `<span class="diff-correct">${correctWord}</span> `;
                         score++;
                     } else {
-                        // Từ sai hoặc thiếu
                         diffHTML += `<span class="diff-incorrect">${correctWord}</span> `;
                     }
                 });
                 
-                // Nếu người dùng nói thừa từ
                 if (userWords.length > correctWords.length) {
                     const extraWords = userWords.slice(correctWords.length).join(' ');
                     diffHTML += `<span class="diff-extra">(Bạn đọc thừa: ${extraWords})</span>`;
@@ -355,12 +353,12 @@
                     percentage: Math.round(percentage),
                     score: score,
                     totalWords: totalWords,
-                    isPerfectMatch: (normUser === normCorrect) // Cần khớp 100% cả về số lượng từ
+                    isPerfectMatch: (normUser === normCorrect) 
                 };
             }
 
 
-            // === 4. HÀM XỬ LÝ CHÍNH ===
+            // === 4. HÀM XỬ LÝ CHÍNH (ĐÃ SỬA) ===
 
             function playSpeech(text, lang = 'de-DE') {
                 if (!text) {
@@ -383,18 +381,31 @@
                 
                 speechSynthesis.speak(utterance);
             }
+            
+            // *** HÀM DỌN DẸP MỚI (ĐÃ SỬA LỖI) ***
+            function getCleanText(htmlString) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlString;
+                let textContent = tempDiv.innerText || tempDiv.textContent || '';
+                
+                // 1. Xóa phiên âm trước
+                textContent = textContent.replace(/\[.*?\]/g, '').trim();
+                
+                // 2. Tìm "Q:", "A:", "B:" và lấy phần sau nó
+                // Dùng regex `(Q|A|B)\s*:` để xử lý cả "A:" và "A :".
+                const qaIndex = textContent.search(/(Q|A|B)\s*:/i);
+                if (qaIndex !== -1) {
+                    // Tìm vị trí của dấu :
+                    const colonIndex = textContent.indexOf(':', qaIndex);
+                    // Lấy tất cả mọi thứ sau dấu :
+                    textContent = textContent.substring(colonIndex + 1);
+                }
+                
+                // 3. Trim lại lần cuối
+                return textContent.trim();
+            }
 
             function processAndCreateElement(container, qHTML, aHTML) {
-                function getCleanText(htmlString) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = htmlString;
-                    let textContent = tempDiv.innerText || tempDiv.textContent || '';
-                    return textContent
-                        .replace(/^(Q|A|B):\s*/i, '')
-                        .replace(/\[.*?\]/g, '')
-                        .trim();
-                }
-
                 const qTextForSpeech = getCleanText(qHTML);
                 const aTextForSpeech = getCleanText(aHTML);
 
@@ -408,7 +419,7 @@
                 // Câu hỏi (Q)
                 const qLine = document.createElement('div');
                 qLine.className = 'line q-line';
-                qLine.innerHTML = `<span class="text" style="display: none;">${qHTML}</span>`; // Bị ẩn ban đầu
+                qLine.innerHTML = `<span class="text" style="display: none;">${qHTML}</span>`; 
                 const qPlayBtn = document.createElement('button');
                 qPlayBtn.className = 'play-btn';
                 qPlayBtn.textContent = 'Phát';
@@ -424,7 +435,7 @@
                 // Câu trả lời (A)
                 const aLine = document.createElement('div');
                 aLine.className = 'line answer a-line';
-                aLine.innerHTML = `<span class="text" style="display: none;">${aHTML}</span>`; // Bị ẩn ban đầu
+                aLine.innerHTML = `<span class="text" style="display: none;">${aHTML}</span>`;
                 const aPlayBtn = document.createElement('button');
                 aPlayBtn.className = 'play-btn';
                 aPlayBtn.textContent = 'Phát';
@@ -526,7 +537,6 @@
                 updatePracticeState(dialoguePairs[index], mode);
             }
 
-            // Cập nhật logic ẩn/hiện văn bản
             function updatePracticeState(pair, mode) {
                 if (!pair) return;
 
@@ -543,16 +553,15 @@
                 const qText = qLine.querySelector('.text');
                 const aText = aLine.querySelector('.text');
 
-                // Luôn hiện cả 2 dòng (chỉ ẩn/hiện văn bản bên trong)
                 qLine.style.display = 'flex';
                 aLine.style.display = 'flex';
-                aLine.style.borderTop = '1px dashed #ddd'; // Đảm bảo dòng A luôn có
+                aLine.style.borderTop = '1px dashed #ddd';
                 aLine.style.paddingTop = '10px';
                 aLine.style.marginTop = '10px';
 
                 if (mode === 'compQ_userA') { // Người dùng đọc A
-                    qText.style.display = 'flex';  // Hiện văn bản câu Q (máy đọc)
-                    aText.style.display = 'none';  // Ẩn văn bản câu A (người đọc)
+                    qText.style.display = 'flex';
+                    aText.style.display = 'none';
                     
                     toggleBtn.dataset.target = '.a-line.answer .text'; 
                     toggleBtn.textContent = 'Hiện Câu trả lời (A)';
@@ -563,8 +572,8 @@
                     aPracticeBtn.dataset.action = 'record';
 
                 } else if (mode === 'compA_userQ') { // Người dùng đọc Q
-                    qText.style.display = 'none'; // Ẩn văn bản câu Q (người đọc)
-                    aText.style.display = 'flex'; // Hiện văn bản câu A (máy đọc)
+                    qText.style.display = 'none';
+                    aText.style.display = 'flex';
 
                     toggleBtn.dataset.target = '.q-line .text'; 
                     toggleBtn.textContent = 'Hiện Câu hỏi (Q)';
@@ -635,23 +644,21 @@
                     button.classList.add('recording');
                 };
 
-                // *** LOGIC CHẤM ĐIỂM MỚI TẠI ĐÂY ***
                 recognition.onresult = (event) => {
                     const userText = event.results[0][0].transcript;
                     
-                    // Tính toán điểm và so sánh
                     const diffData = calculateDiff(userText, correctText);
                     
                     if (strictModeCheck.checked) {
-                        if (diffData.isPerfectMatch) { // Yêu cầu khớp 100%
+                        // **Chỉ chuyển câu nếu khớp 100% (cả điểm và isPerfectMatch)**
+                        if (diffData.isPerfectMatch && diffData.percentage === 100) { 
                             playSound('correct');
                             setTimeout(goToNextPair, 400); 
                         } else {
                             playSound('incorrect');
-                            displayTranscription(button.closest('.line'), diffData); // Hiển thị lỗi
+                            displayTranscription(button.closest('.line'), diffData); 
                         }
                     } else {
-                        // Không ở chế độ nghiêm khắc, chỉ hiển thị kết quả
                         displayTranscription(button.closest('.line'), diffData);
                     }
                 };
@@ -659,9 +666,8 @@
                 recognition.start();
             }
 
-            // *** HÀM HIỂN THỊ CHẤM ĐIỂM MỚI ***
+            // Hàm hiển thị chấm điểm mới
             function displayTranscription(lineEl, data) {
-                // Tự động hiển thị văn bản gốc khi có kết quả
                 const textEl = lineEl.querySelector('.text');
                 if (textEl) textEl.style.display = 'flex';
 
@@ -749,7 +755,7 @@
                 }
                 
                 updateDisplayMode();
-                triggerAutoPlay(); // Tự động phát câu đầu tiên
+                triggerAutoPlay(); 
             });
 
             contentContainer.addEventListener('click', (event) => {
