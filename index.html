@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ Luyện tập Tiếng Đức (V8 - Sửa lỗi an toàn)</title>
+    <title>Công cụ Luyện tập Tiếng Đức (V9 - Sửa lỗi Race)</title>
     <style>
         body {
             font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;
@@ -73,7 +73,7 @@
 <body>
 
     <div class="container">
-        <h1>Công cụ Luyện tập Tiếng Đức (V8 - Có Ghi âm)</h1>
+        <h1>Công cụ Luyện tập Tiếng Đức (V9 - Có Ghi âm)</h1>
         
         <div class="controls">
             <p>Chọn các file <strong>chuong-*.html</strong> của bạn:</p>
@@ -202,6 +202,14 @@
         // === 2. HÀM XỬ LÝ FILE (IMPORT) ===
         
         fileInput.addEventListener('change', (event) => {
+            // Dừng mọi âm thanh đang phát
+            speechSynthesis.cancel();
+            
+            // Dừng mọi hoạt động ghi âm
+            if (recognition) {
+                recognition.stop();
+            }
+
             contentContainer.innerHTML = '';
             allPairs = [];
             currentPairIndex = 0;
@@ -226,6 +234,12 @@
                             practiceZone.style.display = 'block';
                             currentPairContainer.style.display = 'block';
                             showPair(currentPairIndex);
+                        } else {
+                            // Không tìm thấy cặp nào
+                            navigationContainer.style.display = 'none';
+                            practiceZone.style.display = 'none';
+                            currentPairContainer.style.display = 'block';
+                            currentPairContainer.innerHTML = "<p>Không tìm thấy cặp Q/A nào hợp lệ trong các file đã chọn.</p>";
                         }
                     }
                 };
@@ -285,6 +299,9 @@
 
             currentPairIndex = index;
             const pair = allPairs[index];
+            
+            // Kiểm tra an toàn một lần nữa, phòng trường hợp mảng rỗng
+            if (!pair) return;
 
             currentPairContainer.innerHTML = `
                 <div class="dialogue-pair">
@@ -323,16 +340,19 @@
         });
 
         function applyModeLogic() {
-            // *** SỬA LỖI (V8): Thêm "cầu dao an toàn" ***
-            // Chặn hàm chạy nếu dữ liệu chưa sẵn sàng (để sửa lỗi 'Cannot read... qText')
-            if (allPairs.length === 0 || !allPairs[currentPairIndex]) {
+            // *** SỬA LỖI (V9): Lấy cặp câu 1 LẦN DUY NHẤT ***
+            // và lưu vào biến cục bộ 'pair' để tránh race condition
+            const pair = allPairs[currentPairIndex];
+
+            // "Cầu dao an toàn"
+            if (allPairs.length === 0 || !pair) {
                 return;
             }
 
             const isPractice = modePractice.checked;
             
             practiceOptions.disabled = !isPractice;
-            recordBtn.disabled = !isPractice || !recognition; // Vô hiệu hóa nếu API hỏng
+            recordBtn.disabled = !isPractice || !recognition;
 
             const container = currentPairContainer;
             if (!container) return;
@@ -343,15 +363,13 @@
                 if (document.getElementById('show-q').checked) {
                     container.classList.remove('show-answer');
                     container.classList.add('show-question');
-                    if (allPairs[currentPairIndex]) { // Kiểm tra lại cho chắc
-                        playSpeech(allPairs[currentPairIndex].qText);
-                    }
+                    // Sử dụng biến 'pair' an toàn
+                    playSpeech(pair.qText);
                 } else {
                     container.classList.remove('show-question');
                     container.classList.add('show-answer');
-                    if (allPairs[currentPairIndex]) { // Kiểm tra lại cho chắc
-                        playSpeech(allPairs[currentPairIndex].aText);
-                    }
+                    // Sử dụng biến 'pair' an toàn
+                    playSpeech(pair.aText);
                 }
             } else {
                 container.classList.remove('practice-mode', 'show-question', 'show-answer');
@@ -396,16 +414,15 @@
                 const transcript = event.results[0][0].transcript;
                 practiceTranscript.textContent = transcript;
                 
-                // *** SỬA LỖI (V8): Thêm "cầu dao an toàn" ***
-                if (allPairs.length === 0 || !allPairs[currentPairIndex]) {
-                    return;
-                }
+                // *** SỬA LỖI (V9): Lấy cặp câu 1 LẦN DUY NHẤT ***
+                const pair = allPairs[currentPairIndex];
+                if (!pair) return; // Cầu dao an toàn
 
                 let originalText = '';
                 if (document.getElementById('show-q').checked) {
-                    originalText = allPairs[currentPairIndex].aText;
+                    originalText = pair.aText;
                 } else {
-                    originalText = allPairs[currentPairIndex].qText;
+                    originalText = pair.qText;
                 }
 
                 const score = calculateScore(originalText, transcript);
