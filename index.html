@@ -123,12 +123,9 @@
             font-size: 0.95em;
         }
         .user-transcription .correct-text {
-            color: #28a745;
-            font-weight: bold;
+            color: #666; /* Màu xám cho câu gốc */
         }
         .user-transcription .user-text {
-            color: #0056b3;
-            font-weight: bold;
             font-style: italic;
         }
         #strictModeCheck-label {
@@ -138,6 +135,21 @@
         #autoPlayCheck-label {
             color: #0056b3;
             font-weight: bold;
+        }
+        
+        /* Style cho chấm điểm */
+        .diff-correct {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .diff-incorrect {
+            color: #dc3545;
+            text-decoration: line-through;
+            font-weight: bold;
+        }
+        .diff-extra {
+            color: #f0ad4e;
+            font-style: italic;
         }
 
     </style>
@@ -167,7 +179,7 @@
         </div>
         <div>
             <input type="checkbox" id="strictModeCheck">
-            <label for="strictModeCheck" id="strictModeCheck-label"><strong>Chế độ Nghiêm khắc:</strong> Tự động chuyển câu nếu đọc ĐÚNG.</label>
+            <label for="strictModeCheck" id="strictModeCheck-label"><strong>Chế độ Nghiêm khắc:</strong> Tự động chuyển câu nếu đọc ĐÚNG 100%.</label>
         </div>
         <p style="font-size: 0.9em; color: #555;"><i>(Khi bật chế độ luyện tập, trình duyệt sẽ yêu cầu quyền sử dụng Micro của bạn.)</i></p>
     </div>
@@ -207,7 +219,7 @@
             const pairCounter = document.getElementById('pair-counter');
             const modeRadios = document.querySelectorAll('input[name="practiceMode"]');
             const strictModeCheck = document.getElementById('strictModeCheck');
-            const autoPlayCheck = document.getElementById('autoPlayCheck'); // MỚI
+            const autoPlayCheck = document.getElementById('autoPlayCheck');
 
             // === 2. HÀM KHỞI TẠO ===
 
@@ -262,7 +274,7 @@
                 };
             }
 
-            // === 3. HÀM ÂM THANH & SO SÁNH (ĐÃ SỬA) ===
+            // === 3. HÀM ÂM THANH & SO SÁNH (ĐÃ NÂNG CẤP) ===
 
             function initAudio() {
                 if (!audioCtx) {
@@ -295,12 +307,56 @@
                 oscillator.stop(audioCtx.currentTime + 0.15); 
             }
 
-            // *** SỬA LỖI CHẤM ĐIỂM TẠI ĐÂY ***
+            // Chuẩn hóa văn bản: bỏ dấu câu, dấu nháy đơn, nháy cong
             function normalizeText(text) {
                 if (!text) return '';
                 return text.toLowerCase()
                            .replace(/[.,!?;:\[\]'’]/g, '') // Bỏ hết dấu câu, dấu nháy đơn ' và nháy cong ’
+                           .replace(/\s+/g, ' ') // Chuẩn hóa khoảng trắng
                            .trim();
+            }
+
+            // *** HÀM MỚI: TÍNH ĐIỂM VÀ SO SÁNH ***
+            function calculateDiff(userText, correctText) {
+                const normCorrect = normalizeText(correctText);
+                const normUser = normalizeText(userText);
+                
+                const correctWords = normCorrect.split(' ');
+                const userWords = normUser.split(' ');
+                
+                let diffHTML = '<strong>So sánh chi tiết: </strong>';
+                let score = 0;
+                let totalWords = correctWords.length;
+
+                correctWords.forEach((correctWord, index) => {
+                    const userWord = userWords[index];
+                    
+                    if (userWord === correctWord) {
+                        diffHTML += `<span class="diff-correct">${correctWord}</span> `;
+                        score++;
+                    } else {
+                        // Từ sai hoặc thiếu
+                        diffHTML += `<span class="diff-incorrect">${correctWord}</span> `;
+                    }
+                });
+                
+                // Nếu người dùng nói thừa từ
+                if (userWords.length > correctWords.length) {
+                    const extraWords = userWords.slice(correctWords.length).join(' ');
+                    diffHTML += `<span class="diff-extra">(Bạn đọc thừa: ${extraWords})</span>`;
+                }
+                
+                const percentage = totalWords > 0 ? (score / totalWords) * 100 : 0;
+                
+                return {
+                    originalCorrect: correctText,
+                    originalUser: userText,
+                    diffHTML: diffHTML,
+                    percentage: Math.round(percentage),
+                    score: score,
+                    totalWords: totalWords,
+                    isPerfectMatch: (normUser === normCorrect) // Cần khớp 100% cả về số lượng từ
+                };
             }
 
 
@@ -352,8 +408,7 @@
                 // Câu hỏi (Q)
                 const qLine = document.createElement('div');
                 qLine.className = 'line q-line';
-                // *** THÊM data-text gốc vào span để toggle
-                qLine.innerHTML = `<span class="text" style="display: none;">${qHTML}</span>`; 
+                qLine.innerHTML = `<span class="text" style="display: none;">${qHTML}</span>`; // Bị ẩn ban đầu
                 const qPlayBtn = document.createElement('button');
                 qPlayBtn.className = 'play-btn';
                 qPlayBtn.textContent = 'Phát';
@@ -369,8 +424,7 @@
                 // Câu trả lời (A)
                 const aLine = document.createElement('div');
                 aLine.className = 'line answer a-line';
-                // *** THÊM data-text gốc vào span để toggle
-                aLine.innerHTML = `<span class="text" style="display: none;">${aHTML}</span>`;
+                aLine.innerHTML = `<span class="text" style="display: none;">${aHTML}</span>`; // Bị ẩn ban đầu
                 const aPlayBtn = document.createElement('button');
                 aPlayBtn.className = 'play-btn';
                 aPlayBtn.textContent = 'Phát';
@@ -438,29 +492,28 @@
                         pair.style.display = 'block';
                         
                         pair.querySelector('.q-line').style.display = 'flex';
-                        pair.querySelector('.q-line .text').style.display = 'flex'; // Hiện văn bản Q
+                        pair.querySelector('.q-line .text').style.display = 'flex';
                         pair.querySelector('.q-line .play-btn').style.display = 'inline-block';
                         
                         const aLine = pair.querySelector('.a-line.answer');
-                        aLine.style.display = 'none'; // Ẩn dòng A
-                        aLine.querySelector('.text').style.display = 'flex'; // Reset văn bản A
+                        aLine.style.display = 'none'; 
+                        aLine.querySelector('.text').style.display = 'flex'; 
                         aLine.querySelector('.play-btn').style.display = 'inline-block';
 
                         const toggleBtn = pair.querySelector('.toggle-answer');
                         toggleBtn.style.display = 'block';
                         toggleBtn.textContent = 'Hiện Đáp án';
-                        toggleBtn.dataset.target = '.a-line.answer'; // Toggle cả dòng A
+                        toggleBtn.dataset.target = '.a-line.answer';
                         
                         pair.querySelectorAll('.practice-btn').forEach(btn => btn.style.display = 'none');
                     });
                 } else {
                     navControls.style.display = 'block';
                     showPair(currentPairIndex);
-                    triggerAutoPlay(); // Kích hoạt auto-play khi chuyển chế độ
+                    triggerAutoPlay();
                 }
             }
 
-            // *** SỬA LỖI GIAO DIỆN TẠI ĐÂY (Vấn đề 2) ***
             function showPair(index) {
                 const mode = document.querySelector('input[name="practiceMode"]:checked').value;
                 if (mode === 'off') return;
@@ -490,15 +543,18 @@
                 const qText = qLine.querySelector('.text');
                 const aText = aLine.querySelector('.text');
 
-                // Luôn hiện cả 2 dòng
+                // Luôn hiện cả 2 dòng (chỉ ẩn/hiện văn bản bên trong)
                 qLine.style.display = 'flex';
                 aLine.style.display = 'flex';
+                aLine.style.borderTop = '1px dashed #ddd'; // Đảm bảo dòng A luôn có
+                aLine.style.paddingTop = '10px';
+                aLine.style.marginTop = '10px';
 
                 if (mode === 'compQ_userA') { // Người dùng đọc A
                     qText.style.display = 'flex';  // Hiện văn bản câu Q (máy đọc)
                     aText.style.display = 'none';  // Ẩn văn bản câu A (người đọc)
                     
-                    toggleBtn.dataset.target = '.a-line.answer .text'; // Target vào văn bản
+                    toggleBtn.dataset.target = '.a-line.answer .text'; 
                     toggleBtn.textContent = 'Hiện Câu trả lời (A)';
                     
                     qPracticeBtn.textContent = 'Phát Câu hỏi (Q)';
@@ -510,7 +566,7 @@
                     qText.style.display = 'none'; // Ẩn văn bản câu Q (người đọc)
                     aText.style.display = 'flex'; // Hiện văn bản câu A (máy đọc)
 
-                    toggleBtn.dataset.target = '.q-line .text'; // Target vào văn bản
+                    toggleBtn.dataset.target = '.q-line .text'; 
                     toggleBtn.textContent = 'Hiện Câu hỏi (Q)';
 
                     qPracticeBtn.textContent = 'Click để Đọc (Q)';
@@ -523,9 +579,8 @@
                 aPracticeBtn.style.display = 'inline-block';
             }
 
-            // === 6. HÀM LUYỆN NÓI & ĐIỀU HƯỚNG (ĐÃ SỬA) ===
+            // === 6. HÀM LUYỆN NÓI & ĐIỀU HƯỚNG (ĐÃ NÂNG CẤP) ===
             
-            // *** TÍNH NĂNG MỚI: TỰ ĐỘNG PHÁT ***
             function triggerAutoPlay() {
                 if (!autoPlayCheck.checked) return; 
                 if (currentPairIndex >= dialoguePairs.length) return; 
@@ -537,10 +592,8 @@
                 let textToPlay = null;
 
                 if (mode === 'compQ_userA') {
-                    // Máy đọc Q
                     textToPlay = activePair.querySelector('.q-line .practice-btn').dataset.text;
                 } else if (mode === 'compA_userQ') {
-                    // Máy đọc A
                     textToPlay = activePair.querySelector('.a-line .practice-btn').dataset.text;
                 }
 
@@ -556,8 +609,8 @@
                     alert("Hoàn thành! Bạn đã luyện tập tất cả các câu. Quay về câu đầu.");
                     currentPairIndex = 0; 
                 }
-                showPair(currentPairIndex); // Cập nhật UI
-                triggerAutoPlay(); // Tự động phát cho câu mới
+                showPair(currentPairIndex); 
+                triggerAutoPlay(); 
             }
 
             function startRecognition(button, correctText) {
@@ -582,31 +635,33 @@
                     button.classList.add('recording');
                 };
 
+                // *** LOGIC CHẤM ĐIỂM MỚI TẠI ĐÂY ***
                 recognition.onresult = (event) => {
                     const userText = event.results[0][0].transcript;
                     
+                    // Tính toán điểm và so sánh
+                    const diffData = calculateDiff(userText, correctText);
+                    
                     if (strictModeCheck.checked) {
-                        const normUser = normalizeText(userText);
-                        const normCorrect = normalizeText(correctText);
-
-                        if (normUser === normCorrect) {
+                        if (diffData.isPerfectMatch) { // Yêu cầu khớp 100%
                             playSound('correct');
                             setTimeout(goToNextPair, 400); 
                         } else {
                             playSound('incorrect');
-                            displayTranscription(button.closest('.line'), userText, correctText); 
+                            displayTranscription(button.closest('.line'), diffData); // Hiển thị lỗi
                         }
                     } else {
-                        displayTranscription(button.closest('.line'), userText, correctText);
+                        // Không ở chế độ nghiêm khắc, chỉ hiển thị kết quả
+                        displayTranscription(button.closest('.line'), diffData);
                     }
                 };
 
                 recognition.start();
             }
 
-            // Cập nhật để hiển thị văn bản khi có kết quả
-            function displayTranscription(lineEl, userText, correctText) {
-                // *** MỚI: Tự động hiển thị văn bản gốc khi có kết quả ***
+            // *** HÀM HIỂN THỊ CHẤM ĐIỂM MỚI ***
+            function displayTranscription(lineEl, data) {
+                // Tự động hiển thị văn bản gốc khi có kết quả
                 const textEl = lineEl.querySelector('.text');
                 if (textEl) textEl.style.display = 'flex';
 
@@ -615,18 +670,22 @@
                 if (toggleBtn.textContent.includes('Hiện')) {
                     toggleBtn.textContent = toggleBtn.textContent.replace('Hiện', 'Ẩn');
                 }
-                // *** Hết phần mới ***
 
                 const div = document.createElement('div');
                 div.className = 'user-transcription';
                 
-                const normUser = normalizeText(userText);
-                const normCorrect = normalizeText(correctText);
-                const color = (normUser === normCorrect) ? '#28a745' : '#dc3545';
-                
+                const color = (data.percentage === 100 && data.isPerfectMatch) ? '#28a745' : '#dc3545';
+
                 div.innerHTML = `
-                    <div><span class="correct-text">Đáp án đúng:</span> ${correctText}</div>
-                    <div><span class="user-text">Bạn đã đọc:</span> <span style="color: ${color};">${userText}</span></div>
+                    <div><span class="correct-text">Đáp án đúng:</span> ${data.originalCorrect}</div>
+                    <div><span class="user-text">Bạn đã đọc:</span> <span style="color:${color};">${data.originalUser}</span></div>
+                    <hr style="margin: 5px 0;">
+                    <div>${data.diffHTML}</div>
+                    <div style="margin-top: 5px;">
+                        <strong>Điểm khớp từ: ${data.percentage}%</strong> 
+                        (${data.score} / ${data.totalWords} từ khớp)
+                    </div>
+                    ${data.percentage < 100 ? `<small><i>(Máy đã gạch bỏ từ nghe KHÔNG ĐÚNG hoặc BỊ THIẾU. Đây là lỗi nhận dạng văn bản, không phải lỗi phát âm.)</i></small>` : '<small style="color: green;"><i>Tuyệt vời! Số từ đã khớp 100%.</i></small>'}
                 `;
                 
                 lineEl.after(div);
@@ -690,9 +749,9 @@
                 }
                 
                 updateDisplayMode();
+                triggerAutoPlay(); // Tự động phát câu đầu tiên
             });
 
-            // *** SỬA LỖI LOGIC NÚT TOGGLE ***
             contentContainer.addEventListener('click', (event) => {
                 initAudio();
                 const target = event.target;
@@ -702,10 +761,8 @@
                     let elementToToggle;
                     
                     if (mode === 'off') {
-                        // Chế độ 'Tắt': Toggle cả dòng .answer
                         elementToToggle = target.nextElementSibling; 
                     } else {
-                        // Chế độ 'Luyện tập': Toggle văn bản .text
                         const targetSelector = target.dataset.target;
                         elementToToggle = target.closest('.dialogue-pair').querySelector(targetSelector);
                     }
@@ -745,13 +802,13 @@
                 });
             });
 
-            nextBtn.addEventListener('click', goToNextPair); // Đã có auto-play
+            nextBtn.addEventListener('click', goToNextPair);
 
             prevBtn.addEventListener('click', () => {
                 if (currentPairIndex > 0) {
                     currentPairIndex--;
                     showPair(currentPairIndex);
-                    triggerAutoPlay(); // Thêm auto-play cho nút 'Câu trước'
+                    triggerAutoPlay();
                 }
             });
 
