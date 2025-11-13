@@ -3,488 +3,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ Luyện tập Tiếng Đức (V9 - Sửa lỗi Race)</title>
+    <title>Công cụ Lọc Tiếng Đức (Nâng cao)</title>
     <style>
         body {
-            font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;
-            background-color: #f4f4f4; color: #333;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
         }
-        h1, h2 { color: #444; }
-        .container { max-width: 800px; margin: auto; }
-        .controls, .navigation, .practice-zone, #current-pair-container {
-            background-color: #fff; border: 1px solid #ccc;
-            border-radius: 8px; padding: 15px; margin-bottom: 15px;
+        h1, h2, h3 {
+            color: #444;
         }
-        .controls { background-color: #e9ecef; }
-        #fileInput { font-size: 1em; }
-
-        .navigation {
-            display: none; text-align: center; font-size: 1.1em;
+        .controls, .practice-controls {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
-        .nav-btn {
-            padding: 8px 15px; font-size: 1em;
-            cursor: pointer; margin: 0 10px;
+        .practice-controls div {
+            margin-bottom: 8px;
         }
-        #pair-counter { font-weight: bold; display: inline-block; min-width: 80px; }
-
-        .practice-zone { display: none; }
-        .practice-controls fieldset {
-            border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;
+        #navigation-controls {
+            display: none; /* Ẩn mặc định */
+            margin: 20px 0;
+            text-align: center;
         }
-        .practice-controls legend { font-weight: bold; padding: 0 5px; }
-        #record-btn {
-            background-color: #dc3545; color: white; border: none;
-            padding: 10px 15px; font-size: 1em; border-radius: 5px; cursor: pointer;
+        #navigation-controls button {
+            font-size: 1.1em;
+            padding: 10px 20px;
+            margin: 0 10px;
+            cursor: pointer;
         }
-        #record-btn:hover { background-color: #c82333; }
-        #record-btn.recording {
-            background-color: #007bff; animation: pulse 1.5s infinite;
+        #pair-counter {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0 15px;
         }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        #fileInput {
+            font-size: 1em;
         }
-        #practice-result { margin-top: 10px; }
-        #practice-score { font-size: 1.2em; font-weight: bold; color: #007bff; }
-
-        #current-pair-container { display: none; }
-        #content-container { display: none; }
-
-        .dialogue-pair { border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        #content-container {
+            margin-top: 20px;
+        }
+        .dialogue-pair {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .dialogue-pair.hidden {
+            display: none;
+        }
         .line {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 10px; padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            flex-wrap: wrap; /* Cho phép xuống dòng nếu không đủ chỗ */
         }
-        .line .text { flex-grow: 1; font-size: 1.1em; }
-        .play-btn {
-            background-color: #17a2b8; color: white; border: none;
-            border-radius: 5px; padding: 5px 10px; cursor: pointer;
-            font-size: 0.9em; margin-left: 10px; flex-shrink: 0;
+        .line .text {
+            flex-grow: 1;
+            font-size: 1.1em;
+            margin-right: 10px;
         }
-        .play-btn:hover { background-color: #138496; }
+        .play-btn, .practice-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        .play-btn:hover {
+            background-color: #0056b3;
+        }
+        .toggle-answer {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .toggle-answer:hover {
+            background-color: #218838;
+        }
+        .answer {
+            display: none; /* Ẩn câu trả lời mặc định */
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        /* Styles cho tính năng mới */
+        .practice-btn.play {
+            background-color: #007bff; /* Xanh */
+        }
+        .practice-btn.record {
+            background-color: #dc3545; /* Đỏ */
+        }
+        .practice-btn.recording {
+            background-color: #ffc107; /* Vàng */
+            color: #333;
+        }
+        .user-transcription {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+        .user-transcription .correct-text {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .user-transcription .user-text {
+            color: #0056b3;
+            font-weight: bold;
+            font-style: italic;
+        }
 
-        .practice-mode .line.question { display: none; }
-        .practice-mode .line.answer { display: none; }
-        .practice-mode.show-question .line.question { display: flex; }
-        .practice-mode.show-answer .line.answer { display: flex; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Công cụ Luyện tập Tiếng Đức (V9 - Có Ghi âm)</h1>
-        
-        <div class="controls">
-            <p>Chọn các file <strong>chuong-*.html</strong> của bạn:</p>
-            <input type="file" id="fileInput" multiple accept=".html">
-            <p style="color: red; font-weight: bold;">(Lưu ý: Phải chạy file này bằng "Live Server" để tính năng ghi âm hoạt động!)</p>
+    <h1>Công cụ Học Tiếng Đức Tương Tác (Nâng cao)</h1>
+
+    <div class="practice-controls">
+        <h3>Chế độ Luyện tập</h3>
+        <div>
+            <input type="radio" name="practiceMode" value="off" id="modeOff" checked>
+            <label for="modeOff"><strong>Tắt (Xem tất cả)</strong> - Chế độ xem/nghe thông thường.</label>
         </div>
-
-        <div class="practice-zone">
-            <div class="practice-controls">
-                <fieldset>
-                    <legend>1. Chọn Chế độ</legend>
-                    <input type="radio" id="mode-browse" name="mode" value="browse" checked>
-                    <label for="mode-browse">Duyệt tuần tự (Hiện cả Q & A)</label>
-                    <br>
-                    <input type="radio" id="mode-practice" name="mode" value="practice">
-                    <label for="mode-practice">Luyện tập (Ẩn 1 vế)</label>
-                </fieldset>
-
-                <fieldset id="practice-options" disabled>
-                    <legend>2. Tùy chọn Luyện tập</legend>
-                    <input type="radio" id="show-q" name="practice-show" value="show-question" checked>
-                    <label for="show-q">Mặc định hiện Câu Hỏi (Q)</label>
-                    <br>
-                    <input type="radio" id="show-a" name="practice-show" value="show-answer">
-                    <label for="show-a">Mặc định hiện Câu Trả Lời (A)</label>
-                </fieldset>
-            </div>
-
-            <button id="record-btn" disabled>Bắt đầu Ghi âm (Chỉ Chế độ Luyện tập)</button>
-            <div id="practice-result">
-                <strong>Máy nghe được:</strong> <span id="practice-transcript">...</span>
-            </div>
-            <div id="practice-score">Điểm số: 0%</div>
+        <div>
+            <input type="radio" name="practiceMode" value="compQ_userA" id="modeQ">
+            <label for="modeQ"><strong>Luyện nói (A):</strong> Máy đọc Câu hỏi (Q), Tôi đọc Câu trả lời (A)</label>
         </div>
-
-        <div class="navigation">
-            <button id="prev-btn" class="nav-btn">❮ Trước</button>
-            <span id="pair-counter">Cặp 0 / 0</span>
-            <button id="next-btn" class="nav-btn">Tiếp ❯</button>
+        <div>
+            <input type="radio" name="practiceMode" value="compA_userQ" id="modeA">
+            <label for="modeA"><strong>Luyện nói (Q):</strong> Máy đọc Câu trả lời (A), Tôi đọc Câu hỏi (Q)</label>
         </div>
+        <p style="font-size: 0.9em; color: #555;"><i>(Khi bật chế độ luyện tập, trình duyệt sẽ yêu cầu quyền sử dụng Micro của bạn.)</i></p>
+    </div>
+    
+    <div class="controls">
+        <p>Chọn các file <strong>chuong-*.html</strong> của bạn để xử lý:</p>
+        <input type="file" id="fileInput" multiple accept=".html">
+    </div>
 
-        <div id="current-pair-container">
-            </div>
+    <div id="navigation-controls">
+        <button id="prevBtn">&laquo; Câu trước</button>
+        <span id="pair-counter">Câu 1 / 10</span>
+        <button id="nextBtn">Câu tiếp theo &raquo;</button>
+    </div>
 
-        <div id="content-container"></div>
+    <div id="content-container">
+        <p>Nội dung các file của bạn sẽ xuất hiện ở đây sau khi bạn chọn chúng.</p>
     </div>
 
     <script>
         // === BIẾN TOÀN CỤC ===
-        let allPairs = []; 
         let currentPairIndex = 0;
-        let germanVoice = null;
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-        
-        if (SpeechRecognition) {
-            try {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'de-DE';
-                recognition.interimResults = false;
-                recognition.maxAlternatives = 1;
-            } catch(e) {
-                console.error("Lỗi khi khởi tạo SpeechRecognition:", e);
-                alert("Không thể khởi tạo tính năng ghi âm. Đảm bảo bạn đang chạy trên một máy chủ (http://) và không phải file (file://).");
-            }
-        } else {
-            console.warn("Trình duyệt này không hỗ trợ SpeechRecognition.");
-        }
+        let dialoguePairs = [];
+        let targetVoice = null;
+        const GERMAN_VOICE_NAME = 'Microsoft Amala Online (Natural) - German (Germany)';
+        let recognition;
+        let isRecording = false;
 
-        // === LẤY CÁC PHẦN TỬ DOM ===
-        const fileInput = document.getElementById('fileInput');
-        const contentContainer = document.getElementById('content-container');
-        const currentPairContainer = document.getElementById('current-pair-container');
-        const navigationContainer = document.getElementById('navigation');
-        const practiceZone = document.getElementById('practice-zone');
-        
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const pairCounter = document.getElementById('pair-counter');
+        // === 1. KHỞI TẠO GIỌNG NÓI VÀ NHẬN DIỆN ===
 
-        const modeBrowse = document.getElementById('mode-browse');
-        const modePractice = document.getElementById('mode-practice');
-        const practiceOptions = document.getElementById('practice-options');
-        const recordBtn = document.getElementById('record-btn');
-        const practiceTranscript = document.getElementById('practice-transcript');
-        const practiceScore = document.getElementById('practice-score');
-
-        // === 1. KHỞI CHẠY & TÌM GIỌNG ĐỌC ===
-        
+        // Tìm và tải giọng nói mong muốn
         function loadVoices() {
-            return new Promise((resolve) => {
-                let voices = speechSynthesis.getVoices();
-                if (voices.length) {
-                    resolve(voices);
-                    return;
+            function findAndSetVoice() {
+                const voices = speechSynthesis.getVoices();
+                targetVoice = voices.find(v => v.name === GERMAN_VOICE_NAME && v.lang === 'de-DE');
+                
+                if (targetVoice) {
+                    console.log(`Đã tìm thấy và chọn giọng: ${targetVoice.name}`);
+                } else {
+                    console.warn(`Không tìm thấy giọng "${GERMAN_VOICE_NAME}". Sẽ sử dụng giọng 'de-DE' mặc định của trình duyệt.`);
                 }
-                speechSynthesis.onvoiceschanged = () => {
-                    voices = speechSynthesis.getVoices();
-                    resolve(voices);
-                };
-            });
-        }
-
-        async function setupVoice() {
-            const voices = await loadVoices();
-            germanVoice = voices.find(v => v.name.includes('Amala') && v.lang.startsWith('de'));
-            if (!germanVoice) germanVoice = voices.find(v => v.name.includes('Microsoft') && v.lang.startsWith('de'));
-            if (!germanVoice) germanVoice = voices.find(v => v.lang.startsWith('de'));
-            if (germanVoice) console.log("Đã chọn giọng đọc:", germanVoice.name);
-            else console.warn("Không tìm thấy giọng 'Amala'. Sẽ dùng giọng mặc định.");
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            setupVoice();
-            if (recognition) {
-                setupRecognition();
-            } else {
-                document.getElementById('mode-practice').disabled = true;
-                recordBtn.disabled = true;
-                recordBtn.textContent = "Tính năng ghi âm không được hỗ trợ";
-                alert("Trình duyệt không hỗ trợ ghi âm. Vui lòng dùng Chrome hoặc Edge.");
             }
-        });
+            findAndSetVoice();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = findAndSetVoice;
+            }
+        }
 
-        // === 2. HÀM XỬ LÝ FILE (IMPORT) ===
-        
-        fileInput.addEventListener('change', (event) => {
-            // Dừng mọi âm thanh đang phát
-            speechSynthesis.cancel();
+        // Cài đặt API Nhận dạng Giọng nói
+        function setupRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!window.SpeechRecognition) {
+                console.error("Trình duyệt của bạn không hỗ trợ Web Speech API (SpeechRecognition).");
+                // Vô hiệu hóa các nút luyện tập
+                document.querySelectorAll('input[name="practiceMode"]').forEach(radio => {
+                    if (radio.value !== 'off') radio.disabled = true;
+                });
+                document.querySelector('label[for="modeQ"]').innerHTML += " (Trình duyệt không hỗ trợ)";
+                document.querySelector('label[for="modeA"]').innerHTML += " (Trình duyệt không hỗ trợ)";
+                return;
+            }
             
-            // Dừng mọi hoạt động ghi âm
-            if (recognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'de-DE';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onerror = (event) => {
+                console.error('Lỗi nhận dạng giọng nói:', event.error);
+                if(event.error === 'not-allowed') {
+                    alert('Bạn đã chặn quyền truy cập micro. Vui lòng cho phép để sử dụng tính năng luyện nói.');
+                }
+                isRecording = false;
+                resetPracticeButton();
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                resetPracticeButton();
+            };
+        }
+
+        // === 2. HÀM XỬ LÝ CHÍNH ===
+
+        // Hàm phát âm thanh (Text-to-Speech)
+        function playSpeech(text, lang = 'de-DE') {
+            if (!text) {
+                console.error('Không có văn bản để phát.');
+                return;
+            }
+            // Dừng phát và ghi âm (nếu có)
+            speechSynthesis.cancel();
+            if (isRecording) {
                 recognition.stop();
             }
 
-            contentContainer.innerHTML = '';
-            allPairs = [];
-            currentPairIndex = 0;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 0.9;
+            
+            // Sử dụng giọng Amala nếu tìm thấy
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
 
-            const files = event.target.files;
-            if (!files.length) return;
+        // Hàm xử lý nội dung HTML và trích xuất văn bản sạch để phát âm
+        function processAndCreateElement(container, qHTML, aHTML) {
+            
+            // Hàm trợ giúp để dọn dẹp HTML lấy text
+            function getCleanText(htmlString) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlString;
+                let textContent = tempDiv.innerText || tempDiv.textContent || '';
+                return textContent
+                    .replace(/^(Q|A|B):\s*/i, '')
+                    .replace(/\[.*?\]/g, '')
+                    .trim();
+            }
 
-            contentContainer.innerHTML = 'Đang xử lý...';
-            let filesRead = 0;
+            const qTextForSpeech = getCleanText(qHTML);
+            const aTextForSpeech = getCleanText(aHTML);
 
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const fileContent = e.target.result;
-                    parseHTMLFile(fileContent, file.name);
-                    filesRead++;
-                    if (filesRead === files.length) {
-                        console.log(`Đã trích xuất được ${allPairs.length} cặp câu.`);
-                        contentContainer.innerHTML = '';
-                        if (allPairs.length > 0) {
-                            navigationContainer.style.display = 'block';
-                            practiceZone.style.display = 'block';
-                            currentPairContainer.style.display = 'block';
-                            showPair(currentPairIndex);
-                        } else {
-                            // Không tìm thấy cặp nào
-                            navigationContainer.style.display = 'none';
-                            practiceZone.style.display = 'none';
-                            currentPairContainer.style.display = 'block';
-                            currentPairContainer.innerHTML = "<p>Không tìm thấy cặp Q/A nào hợp lệ trong các file đã chọn.</p>";
-                        }
-                    }
-                };
-                reader.readAsText(file);
-            });
-        });
+            if (!qTextForSpeech || !aTextForSpeech) {
+                return;
+            }
 
-        function parseHTMLFile(htmlContent, fileName) {
+            const pair = document.createElement('div');
+            pair.className = 'dialogue-pair hidden'; // Ẩn mặc định
+
+            // Dòng câu hỏi (Q)
+            const qLine = document.createElement('div');
+            qLine.className = 'line q-line';
+            qLine.innerHTML = `<span class="text">${qHTML}</span>`; 
+            const qPlayBtn = document.createElement('button');
+            qPlayBtn.className = 'play-btn';
+            qPlayBtn.textContent = 'Phát';
+            qPlayBtn.dataset.text = qTextForSpeech;
+            qLine.appendChild(qPlayBtn);
+            // Nút luyện tập (ẩn)
+            qLine.appendChild(createPracticeButton('Q', qTextForSpeech));
+            
+            // Nút Ẩn/Hiện
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-answer';
+            toggleBtn.textContent = 'Hiện Đáp án';
+
+            // Dòng câu trả lời (A)
+            const aLine = document.createElement('div');
+            aLine.className = 'line answer a-line'; // Có lớp 'answer' để ẩn
+            aLine.innerHTML = `<span class="text">${aHTML}</span>`;
+            const aPlayBtn = document.createElement('button');
+            aPlayBtn.className = 'play-btn';
+            aPlayBtn.textContent = 'Phát';
+            aPlayBtn.dataset.text = aTextForSpeech;
+            aLine.appendChild(aPlayBtn);
+            // Nút luyện tập (ẩn)
+            aLine.appendChild(createPracticeButton('A', aTextForSpeech));
+
+            pair.appendChild(qLine);
+            pair.appendChild(toggleBtn);
+            pair.appendChild(aLine);
+            container.appendChild(pair);
+        }
+        
+        // Tạo nút Luyện tập (ẩn ban đầu)
+        function createPracticeButton(type, text) {
+            const btn = document.createElement('button');
+            btn.className = 'practice-btn';
+            btn.dataset.type = type; // 'Q' or 'A'
+            btn.dataset.text = text;
+            btn.style.display = 'none'; // Ẩn ban đầu
+            return btn;
+        }
+
+        // Hàm phân tích file HTML
+        function parseHTMLFile(htmlContent, fileName, container) {
+            const fileTitle = document.createElement('h2');
+            fileTitle.textContent = fileName;
+            container.appendChild(fileTitle);
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const potentialElements = doc.querySelectorAll('p, td');
 
             potentialElements.forEach(el => {
                 const isGermanElement = el.querySelector('span[lang="DE"]');
-                if (!isGermanElement) return;
+                if (!isGermanElement) {
+                    return; 
+                }
 
                 const html = el.innerHTML;
                 const lines = html.split(/<br\s*\/?>/i);
                 
                 if (lines.length >= 2) {
                     const qLineHTML = lines[0];
-                    const aLineHTML = lines.slice(1).join('<br>');
+                    const aLineHTML = lines.slice(1).join('<br>'); 
 
                     const isQA_Pair = (qLineHTML.includes('Q:') || qLineHTML.includes('A:')) &&
-                                      (aLineHTML.includes('A:') || aLineHTML.includes('B:'));
+                                      (aLineHTML.includes('A:') || qLineHTML.includes('B:'));
                     
                     if (isQA_Pair) {
-                        const qText = getCleanText(qLineHTML);
-                        const aText = getCleanText(aLineHTML);
-                        if (qText && aText) {
-                            allPairs.push({ 
-                                qHTML: qLineHTML, 
-                                aHTML: aLineHTML, 
-                                qText: qText, 
-                                aText: aText 
-                            });
-                        }
+                        processAndCreateElement(container, qLineHTML, aLineHTML);
                     }
                 }
             });
         }
-        
-        function getCleanText(htmlString) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlString;
-            let textContent = tempDiv.innerText || tempDiv.textContent || '';
-            return textContent
-                .replace(/^(Q|A|B):\s*/i, '')
-                .replace(/\[.*?\]/g, '')
-                .trim();
+
+        // === 3. HÀM CẬP NHẬT GIAO DIỆN ===
+
+        // Hàm cập nhật hiển thị chính (chuyển chế độ)
+        function updateDisplayMode() {
+            const mode = document.querySelector('input[name="practiceMode"]:checked').value;
+            
+            // Dừng mọi hoạt động
+            speechSynthesis.cancel();
+            if (isRecording) recognition.stop();
+
+            if (mode === 'off') {
+                // Chế độ TẮT: Hiển thị tất cả, ẩn điều hướng
+                document.getElementById('navigation-controls').style.display = 'none';
+                dialoguePairs.forEach(pair => {
+                    pair.classList.remove('hidden');
+                    pair.style.display = 'block'; // Đảm bảo hiển thị
+                    
+                    // Hiện nút gốc
+                    pair.querySelector('.play-btn').style.display = 'inline-block';
+                    pair.querySelector('.toggle-answer').style.display = 'block';
+                    pair.querySelector('.answer .play-btn').style.display = 'inline-block';
+                    
+                    // Ẩn nút luyện tập
+                    pair.querySelectorAll('.practice-btn').forEach(btn => btn.style.display = 'none');
+                    
+                    // Reset trạng thái ẩn/hiện
+                    pair.querySelector('.answer').style.display = 'none';
+                    pair.querySelector('.toggle-answer').textContent = 'Hiện Đáp án';
+                });
+            } else {
+                // Chế độ BẬT: Ẩn tất cả, hiện điều hướng
+                document.getElementById('navigation-controls').style.display = 'block';
+                showPair(currentPairIndex); // Chỉ hiển thị cặp hiện tại
+            }
         }
 
-        // === 3. HÀM ĐIỀU HƯỚNG & HIỂN THỊ ===
-        
+        // Hàm hiển thị một cặp câu cụ thể (cho chế độ luyện tập)
         function showPair(index) {
-            if (index < 0 || index >= allPairs.length) return;
+            const mode = document.querySelector('input[name="practiceMode"]:checked').value;
+            if (mode === 'off') return; // Không làm gì nếu đang ở chế độ 'tắt'
 
-            currentPairIndex = index;
-            const pair = allPairs[index];
+            dialoguePairs.forEach((pair, i) => {
+                pair.style.display = (i === index) ? 'block' : 'none';
+            });
             
-            // Kiểm tra an toàn một lần nữa, phòng trường hợp mảng rỗng
+            // Cập nhật bộ đếm
+            document.getElementById('pair-counter').textContent = `Câu ${index + 1} / ${dialoguePairs.length}`;
+            
+            // Cập nhật nút trong cặp đang hiển thị
+            updatePracticeButtons(dialoguePairs[index], mode);
+        }
+
+        // Cập nhật các nút bên trong cặp câu (cho chế độ luyện tập)
+        function updatePracticeButtons(pair, mode) {
             if (!pair) return;
 
-            currentPairContainer.innerHTML = `
-                <div class="dialogue-pair">
-                    <div class="line question">
-                        <span class="text">${pair.qHTML}</span>
-                        <button class="play-btn" data-text="${pair.qText}" aria-label="Phát câu hỏi">Phát Q</button>
-                    </div>
-                    <div class="line answer">
-                        <span class="text">${pair.aHTML}</span>
-                        <button class="play-btn" data-text="${pair.aText}" aria-label="Phát câu trả lời">Phát A</button>
-                    </div>
-                </div>
-            `;
+            // Xóa các bản ghi âm cũ
+            pair.querySelectorAll('.user-transcription').forEach(el => el.remove());
 
-            pairCounter.textContent = `Cặp ${index + 1} / ${allPairs.length}`;
-            prevBtn.disabled = (index === 0);
-            nextBtn.disabled = (index === allPairs.length - 1);
+            // Ẩn các nút gốc
+            pair.querySelectorAll('.play-btn, .toggle-answer').forEach(btn => btn.style.display = 'none');
+            
+            // Luôn hiển thị câu trả lời trong chế độ luyện tập
+            pair.querySelector('.answer').style.display = 'flex';
 
-            practiceTranscript.textContent = '...';
-            practiceScore.textContent = 'Điểm số: 0%';
-            practiceScore.style.color = '#007bff';
-            recordBtn.disabled = !modePractice.checked; 
+            const qBtn = pair.querySelector('.q-line .practice-btn');
+            const aBtn = pair.querySelector('.a-line .practice-btn');
 
-            applyModeLogic();
+            if (mode === 'compQ_userA') {
+                // Máy đọc Q, Người đọc A
+                qBtn.textContent = 'Phát Câu hỏi (Q)';
+                qBtn.className = 'practice-btn play';
+                qBtn.dataset.action = 'play';
+
+                aBtn.textContent = 'Click để Đọc (A)';
+                aBtn.className = 'practice-btn record';
+                aBtn.dataset.action = 'record';
+
+            } else if (mode === 'compA_userQ') {
+                // Máy đọc A, Người đọc Q
+                qBtn.textContent = 'Click để Đọc (Q)';
+                qBtn.className = 'practice-btn record';
+                qBtn.dataset.action = 'record';
+
+                aBtn.textContent = 'Phát Câu trả lời (A)';
+                aBtn.className = 'practice-btn play';
+                aBtn.dataset.action = 'play';
+            }
+            
+            qBtn.style.display = 'inline-block';
+            aBtn.style.display = 'inline-block';
         }
 
-        prevBtn.addEventListener('click', () => showPair(currentPairIndex - 1));
-        nextBtn.addEventListener('click', () => showPair(currentPairIndex + 1));
-
-        // === 4. HÀM XỬ LÝ CHẾ ĐỘ (MODE) ===
-
-        modeBrowse.addEventListener('change', applyModeLogic);
-        modePractice.addEventListener('change', applyModeLogic);
-        document.querySelectorAll('input[name="practice-show"]').forEach(radio => {
-            radio.addEventListener('change', applyModeLogic);
-        });
-
-        function applyModeLogic() {
-            // *** SỬA LỖI (V9): Lấy cặp câu 1 LẦN DUY NHẤT ***
-            // và lưu vào biến cục bộ 'pair' để tránh race condition
-            const pair = allPairs[currentPairIndex];
-
-            // "Cầu dao an toàn"
-            if (allPairs.length === 0 || !pair) {
+        // === 4. HÀM LUYỆN NÓI ===
+        
+        // Bắt đầu ghi âm
+        function startRecognition(button, correctText) {
+            if (isRecording) {
+                recognition.stop();
                 return;
             }
-
-            const isPractice = modePractice.checked;
             
-            practiceOptions.disabled = !isPractice;
-            recordBtn.disabled = !isPractice || !recognition;
-
-            const container = currentPairContainer;
-            if (!container) return;
-
-            if (isPractice) {
-                container.classList.add('practice-mode');
-                
-                if (document.getElementById('show-q').checked) {
-                    container.classList.remove('show-answer');
-                    container.classList.add('show-question');
-                    // Sử dụng biến 'pair' an toàn
-                    playSpeech(pair.qText);
-                } else {
-                    container.classList.remove('show-question');
-                    container.classList.add('show-answer');
-                    // Sử dụng biến 'pair' an toàn
-                    playSpeech(pair.aText);
-                }
-            } else {
-                container.classList.remove('practice-mode', 'show-question', 'show-answer');
-            }
-        }
-
-        // === 5. HÀM PHÁT ÂM THANH (TEXT-TO-SPEECH) ===
-        
-        currentPairContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('play-btn')) {
-                const textToPlay = event.target.dataset.text;
-                playSpeech(textToPlay);
-            }
-        });
-
-        function playSpeech(text) {
-            if (!text || !speechSynthesis) return;
+            isRecording = true;
+            
+            // Dừng phát (nếu có)
             speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            if (germanVoice) utterance.voice = germanVoice;
-            else utterance.lang = 'de-DE';
-            utterance.rate = 0.9;
-            speechSynthesis.speak(utterance);
-        }
+            
+            // Xóa các bản ghi cũ trên *cả hai* dòng
+            const currentPair = button.closest('.dialogue-pair');
+            currentPair.querySelectorAll('.user-transcription').forEach(el => el.remove());
 
-        // === 6. HÀM GHI ÂM & CHẤM ĐIỂM (SPEECH-TO-TEXT) ===
-
-        function setupRecognition() {
             recognition.onstart = () => {
-                recordBtn.textContent = 'Đang nghe...';
-                recordBtn.classList.add('recording');
+                button.textContent = 'Đang nghe...';
+                button.classList.add('recording');
             };
-            recognition.onend = () => {
-                recordBtn.textContent = 'Bắt đầu Ghi âm';
-                recordBtn.classList.remove('recording');
-            };
-            recognition.onerror = (event) => {
-                console.error('Lỗi nhận dạng giọng nói:', event.error);
-                practiceTranscript.textContent = `Lỗi: ${event.error}`;
-            };
+
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                practiceTranscript.textContent = transcript;
-                
-                // *** SỬA LỖI (V9): Lấy cặp câu 1 LẦN DUY NHẤT ***
-                const pair = allPairs[currentPairIndex];
-                if (!pair) return; // Cầu dao an toàn
-
-                let originalText = '';
-                if (document.getElementById('show-q').checked) {
-                    originalText = pair.aText;
-                } else {
-                    originalText = pair.qText;
-                }
-
-                const score = calculateScore(originalText, transcript);
-                practiceScore.textContent = `Điểm số: ${score.toFixed(0)}%`;
-
-                if (score >= 80) {
-                    practiceScore.style.color = 'green';
-                    setTimeout(() => {
-                        if (currentPairIndex < allPairs.length - 1) {
-                            showPair(currentPairIndex + 1);
-                        }
-                    }, 1500);
-                } else {
-                    practiceScore.style.color = 'red';
-                }
+                const userText = event.results[0][0].transcript;
+                displayTranscription(button.closest('.line'), userText, correctText);
             };
+
+            recognition.start();
         }
 
-        recordBtn.addEventListener('click', () => {
-            if (recognition) {
-                try {
-                    // Kiểm tra quyền (cần thiết cho http://)
-                    navigator.mediaDevices.getUserMedia({ audio: true })
-                        .then(() => {
-                            recognition.start();
-                        })
-                        .catch((err) => {
-                            console.error("Lỗi khi xin phép micro:", err);
-                            alert("Bạn cần cấp phép cho trình duyệt sử dụng micro.");
-                        });
-                } catch (e) {
-                    console.warn("Lỗi khi bắt đầu ghi âm (có thể đã chạy): ", e.message);
+        // Hiển thị kết quả tự so sánh
+        function displayTranscription(lineEl, userText, correctText) {
+            const div = document.createElement('div');
+            div.className = 'user-transcription';
+            
+            // So sánh đơn giản (chỉ để tô màu)
+            const isMatch = userText.trim().toLowerCase() === correctText.trim().toLowerCase();
+            const color = isMatch ? '#28a745' : '#dc3545';
+            
+            div.innerHTML = `
+                <div><span class="correct-text">Đáp án đúng:</span> ${correctText}</div>
+                <div><span class="user-text">Bạn đã đọc:</span> <span style="color: ${color};">${userText}</span></div>
+            `;
+            
+            // Thêm vào sau dòng (Q hoặc A)
+            lineEl.after(div);
+        }
+        
+        // Reset nút luyện tập về trạng thái ban đầu
+        function resetPracticeButton() {
+            const activePair = dialoguePairs[currentPairIndex];
+            if (!activePair) return;
+            
+            const mode = document.querySelector('input[name="practiceMode"]:checked').value;
+            const qBtn = activePair.querySelector('.q-line .practice-btn');
+            const aBtn = activePair.querySelector('.a-line .practice-btn');
+
+            if (mode === 'compQ_userA') {
+                aBtn.textContent = 'Click để Đọc (A)';
+                aBtn.className = 'practice-btn record';
+            } else if (mode === 'compA_userQ') {
+                qBtn.textContent = 'Click để Đọc (Q)';
+                qBtn.className = 'practice-btn record';
+            }
+        }
+
+
+        // === 5. SỰ KIỆN ===
+        
+        // Khởi chạy khi tải trang
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVoices();
+            setupRecognition();
+        });
+
+        // 1. Khi người dùng chọn file
+        fileInput.addEventListener('change', async (event) => {
+            contentContainer.innerHTML = 'Đang xử lý...';
+            const files = event.target.files;
+            if (!files.length) {
+                contentContainer.innerHTML = '<p>Bạn chưa chọn file nào.</p>';
+                return;
+            }
+            
+            // Reset
+            contentContainer.innerHTML = ''; 
+            dialoguePairs = [];
+            currentPairIndex = 0;
+
+            // Dùng Promise để đảm bảo file được đọc theo thứ tự
+            const readPromises = Array.from(files).map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve({ name: file.name, content: e.target.result });
+                    reader.readAsText(file);
+                });
+            });
+
+            const fileContents = await Promise.all(readPromises);
+
+            for (const fileData of fileContents) {
+                parseHTMLFile(fileData.content, fileData.name, contentContainer);
+            }
+            
+            // Sau khi tất cả file đã được phân tích, thu thập các cặp câu
+            dialoguePairs = Array.from(contentContainer.querySelectorAll('.dialogue-pair'));
+            
+            if(dialoguePairs.length === 0) {
+                 contentContainer.innerHTML = '<p>Không tìm thấy cặp hội thoại (Q:/A:) nào trong các file đã chọn.</p>';
+                 document.getElementById('navigation-controls').style.display = 'none';
+                 return;
+            }
+            
+            // Cập nhật giao diện dựa trên chế độ đã chọn
+            updateDisplayMode();
+        });
+
+        // 2. Xử lý các nút (Chế độ xem tất cả)
+        contentContainer.addEventListener('click', (event) => {
+            const target = event.target;
+            const mode = document.querySelector('input[name="practiceMode"]:checked').value;
+
+            // Chỉ hoạt động khi ở chế độ 'tắt'
+            if (mode === 'off') {
+                if (target.classList.contains('toggle-answer')) {
+                    const answerElement = target.nextElementSibling;
+                    if (answerElement && answerElement.classList.contains('answer')) {
+                        if (answerElement.style.display === 'none' || answerElement.style.display === '') {
+                            answerElement.style.display = 'flex';
+                            target.textContent = 'Ẩn Đáp án';
+                        } else {
+                            answerElement.style.display = 'none';
+                            target.textContent = 'Hiện Đáp án';
+                        }
+                    }
+                }
+
+                if (target.classList.contains('play-btn')) {
+                    const textToPlay = target.dataset.text; 
+                    playSpeech(textToPlay, 'de-DE');
+                }
+            }
+            
+            // Xử lý nút Luyện tập (bất kể chế độ nào, vì nó chỉ hiển thị ở chế độ 'bật')
+            if (target.classList.contains('practice-btn')) {
+                const action = target.dataset.action;
+                const text = target.dataset.text;
+                
+                if (action === 'play') {
+                    playSpeech(text);
+                } else if (action === 'record') {
+                    startRecognition(target, text);
                 }
             }
         });
-        
-        // === 7. HÀM CHẤM ĐIỂM (LEVENSHTEIN) ===
-        function calculateScore(original, recognized) {
-            const cleanOrig = original.toLowerCase().replace(/[.,?!]/g, '').trim();
-            const cleanRecog = recognized.toLowerCase().replace(/[.,?!]/g, '').trim();
-            if (!cleanOrig || !cleanRecog) return 0;
-            const distance = levenshtein(cleanOrig, cleanRecog);
-            const maxLength = Math.max(cleanOrig.length, cleanRecog.length);
-            if (maxLength === 0) return 100;
-            const similarity = (1 - (distance / maxLength)) * 100;
-            return similarity < 0 ? 0 : similarity;
-        }
 
-        function levenshtein(s1, s2) {
-            let v0 = new Array(s1.length + 1);
-            let v1 = new Array(s1.length + 1);
-            for (let i = 0; i <= s1.length; i++) v0[i] = i;
-            for (let i = 0; i < s2.length; i++) {
-                v1[0] = i + 1;
-                for (let j = 0; j < s1.length; j++) {
-                    let cost = (s1[j] === s2[i]) ? 0 : 1;
-                    v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-                }
-                for (let j = 0; j <= s1.length; j++) v0[j] = v1[j];
+        // 3. Nút chuyển chế độ
+        document.querySelectorAll('input[name="practiceMode"]').forEach(radio => {
+            radio.addEventListener('change', updateDisplayMode);
+        });
+
+        // 4. Nút điều hướng (Chế độ luyện tập)
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (currentPairIndex < dialoguePairs.length - 1) {
+                currentPairIndex++;
+                showPair(currentPairIndex);
             }
-            return v1[s1.length];
-        }
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentPairIndex > 0) {
+                currentPairIndex--;
+                showPair(currentPairIndex);
+            }
+        });
     </script>
 
 </body>
