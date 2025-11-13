@@ -180,7 +180,6 @@
     </div>
 
     <script>
-        // === KHỞI CHẠY KHI TẢI TRANG ===
         document.addEventListener('DOMContentLoaded', () => {
 
             // === 1. BIẾN TOÀN CỤC ===
@@ -190,9 +189,8 @@
             const GERMAN_VOICE_NAME = 'Microsoft Amala Online (Natural) - German (Germany)';
             let recognition;
             let isRecording = false;
-            let audioCtx = null; // Sẽ khởi tạo khi người dùng click
+            let audioCtx = null; 
 
-            // Lấy các phần tử DOM
             const fileInput = document.getElementById('fileInput');
             const contentContainer = document.getElementById('content-container');
             const navControls = document.getElementById('navigation-controls');
@@ -200,7 +198,7 @@
             const nextBtn = document.getElementById('nextBtn');
             const pairCounter = document.getElementById('pair-counter');
             const modeRadios = document.querySelectorAll('input[name="practiceMode"]');
-            const strictModeCheck = document.getElementById('strictModeCheck'); // MỚI
+            const strictModeCheck = document.getElementById('strictModeCheck');
 
             // === 2. HÀM KHỞI TẠO ===
 
@@ -254,9 +252,8 @@
                 };
             }
 
-            // === 3. HÀM ÂM THANH & SO SÁNH (MỚI) ===
+            // === 3. HÀM ÂM THANH & SO SÁNH (ĐÃ SỬA) ===
 
-            // Khởi tạo AudioContext (chỉ chạy 1 lần khi người dùng tương tác)
             function initAudio() {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -266,9 +263,8 @@
                 }
             }
 
-            // Phát âm thanh phản hồi
             function playSound(type) {
-                if (!audioCtx) return; // Nếu audio chưa được khởi tạo
+                if (!audioCtx) return;
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
                 
@@ -279,21 +275,22 @@
                     oscillator.type = 'sine';
                     oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); 
                     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-                } else { // incorrect
+                } else { 
                     oscillator.type = 'square';
                     oscillator.frequency.setValueAtTime(200, audioCtx.currentTime); 
                     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
                 }
                 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15); // Phát trong 0.15 giây
+                oscillator.stop(audioCtx.currentTime + 0.15); 
             }
 
-            // Chuẩn hóa văn bản để so sánh
+            // *** SỬA LỖI QUAN TRỌNG TẠI ĐÂY ***
+            // Chuẩn hóa văn bản để so sánh (bỏ qua dấu câu VÀ dấu nháy đơn)
             function normalizeText(text) {
                 if (!text) return '';
                 return text.toLowerCase()
-                           .replace(/[.,!?;:\[\]]/g, '') // Bỏ hết dấu câu
+                           .replace(/[.,!?;:\[\]']/g, '') // Bỏ hết dấu câu VÀ dấu nháy đơn
                            .trim();
             }
 
@@ -305,7 +302,7 @@
                     console.error('Không có văn bản để phát.');
                     return;
                 }
-                initAudio(); // Khởi tạo audio khi có hành động phát
+                initAudio(); 
                 speechSynthesis.cancel();
                 if (isRecording && recognition) {
                     recognition.stop();
@@ -323,6 +320,7 @@
             }
 
             function processAndCreateElement(container, qHTML, aHTML) {
+                // Hàm getCleanText đã bỏ qua Q: A: và [phonetics]
                 function getCleanText(htmlString) {
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = htmlString;
@@ -343,6 +341,7 @@
                 const pair = document.createElement('div');
                 pair.className = 'dialogue-pair hidden';
 
+                // Câu hỏi (Q)
                 const qLine = document.createElement('div');
                 qLine.className = 'line q-line';
                 qLine.innerHTML = `<span class="text">${qHTML}</span>`; 
@@ -353,12 +352,14 @@
                 qLine.appendChild(qPlayBtn);
                 qLine.appendChild(createPracticeButton('Q', qTextForSpeech));
                 
+                // Nút Ẩn/Hiện
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'toggle-answer';
-                toggleBtn.textContent = 'Hiện Đáp án';
+                toggleBtn.textContent = 'Hiện Đáp án'; // Sẽ được cập nhật sau
 
+                // Câu trả lời (A)
                 const aLine = document.createElement('div');
-                aLine.className = 'line answer a-line';
+                aLine.className = 'line answer a-line'; // Có lớp 'answer' để ẩn/hiện
                 aLine.innerHTML = `<span class="text">${aHTML}</span>`;
                 const aPlayBtn = document.createElement('button');
                 aPlayBtn.className = 'play-btn';
@@ -393,9 +394,7 @@
 
                 potentialElements.forEach(el => {
                     const isGermanElement = el.querySelector('span[lang="DE"]');
-                    if (!isGermanElement) {
-                        return; 
-                    }
+                    if (!isGermanElement) return; 
 
                     const html = el.innerHTML;
                     const lines = html.split(/<br\s*\/?>/i);
@@ -414,7 +413,7 @@
                 });
             }
 
-            // === 5. HÀM CẬP NHẬT GIAO DIỆN ===
+            // === 5. HÀM CẬP NHẬT GIAO DIỆN (ĐÃ SỬA) ===
 
             function updateDisplayMode() {
                 const mode = document.querySelector('input[name="practiceMode"]:checked').value;
@@ -428,14 +427,20 @@
                         pair.classList.remove('hidden');
                         pair.style.display = 'block';
                         
+                        // Hiện các nút mặc định
                         pair.querySelector('.q-line .play-btn').style.display = 'inline-block';
-                        pair.querySelector('.toggle-answer').style.display = 'block';
                         pair.querySelector('.a-line .play-btn').style.display = 'inline-block';
+                        const toggleBtn = pair.querySelector('.toggle-answer');
+                        toggleBtn.style.display = 'block';
+                        toggleBtn.textContent = 'Hiện Đáp án';
+                        toggleBtn.dataset.target = '.a-line.answer'; // Reset
                         
+                        // Ẩn các nút luyện tập
                         pair.querySelectorAll('.practice-btn').forEach(btn => btn.style.display = 'none');
                         
-                        pair.querySelector('.answer').style.display = 'none';
-                        pair.querySelector('.toggle-answer').textContent = 'Hiện Đáp án';
+                        // Ẩn câu A
+                        pair.querySelector('.q-line').style.display = 'flex';
+                        pair.querySelector('.a-line.answer').style.display = 'none';
                     });
                 } else {
                     navControls.style.display = 'block';
@@ -443,6 +448,7 @@
                 }
             }
 
+            // *** SỬA LỖI QUAN TRỌNG TẠI ĐÂY (Vấn đề 2) ***
             function showPair(index) {
                 const mode = document.querySelector('input[name="practiceMode"]:checked').value;
                 if (mode === 'off') return;
@@ -453,52 +459,72 @@
                 
                 pairCounter.textContent = `Câu ${index + 1} / ${dialoguePairs.length}`;
                 
-                updatePracticeButtons(dialoguePairs[index], mode);
+                // Reset và cập nhật các nút/trạng thái ẩn hiện
+                updatePracticeState(dialoguePairs[index], mode);
             }
 
-            function updatePracticeButtons(pair, mode) {
+            // Đổi tên hàm từ updatePracticeButtons -> updatePracticeState
+            function updatePracticeState(pair, mode) {
                 if (!pair) return;
 
                 pair.querySelectorAll('.user-transcription').forEach(el => el.remove());
-
-                pair.querySelectorAll('.play-btn, .toggle-answer').forEach(btn => btn.style.display = 'none');
+                pair.querySelectorAll('.play-btn').forEach(btn => btn.style.display = 'none');
                 
-                pair.querySelector('.answer').style.display = 'flex';
+                const toggleBtn = pair.querySelector('.toggle-answer');
+                toggleBtn.style.display = 'block'; // Luôn hiện nút Ẩn/Hiện
 
-                const qBtn = pair.querySelector('.q-line .practice-btn');
-                const aBtn = pair.querySelector('.a-line .practice-btn');
+                const qLine = pair.querySelector('.q-line');
+                const aLine = pair.querySelector('.a-line.answer');
+                const qPracticeBtn = qLine.querySelector('.practice-btn');
+                const aPracticeBtn = aLine.querySelector('.practice-btn');
 
-                if (mode === 'compQ_userA') {
-                    qBtn.textContent = 'Phát Câu hỏi (Q)';
-                    qBtn.className = 'practice-btn play';
-                    qBtn.dataset.action = 'play';
-                    aBtn.textContent = 'Click để Đọc (A)';
-                    aBtn.className = 'practice-btn record';
-                    aBtn.dataset.action = 'record';
-                } else if (mode === 'compA_userQ') {
-                    qBtn.textContent = 'Click để Đọc (Q)';
-                    qBtn.className = 'practice-btn record';
-                    qBtn.dataset.action = 'record';
-                    aBtn.textContent = 'Phát Câu trả lời (A)';
-                    aBtn.className = 'practice-btn play';
-                    aBtn.dataset.action = 'play';
+                if (mode === 'compQ_userA') { // Người dùng đọc A
+                    qLine.style.display = 'flex';  // Hiện câu Q
+                    aLine.style.display = 'none';  // Ẩn câu A
+                    
+                    toggleBtn.dataset.target = '.a-line.answer';
+                    toggleBtn.textContent = 'Hiện Câu trả lời (A)';
+                    
+                    qPracticeBtn.textContent = 'Phát Câu hỏi (Q)';
+                    qPracticeBtn.className = 'practice-btn play';
+                    qPracticeBtn.dataset.action = 'play';
+
+                    aPracticeBtn.textContent = 'Click để Đọc (A)';
+                    aPracticeBtn.className = 'practice-btn record';
+                    aPracticeBtn.dataset.action = 'record';
+
+                    qPracticeBtn.style.display = 'inline-block';
+                    aPracticeBtn.style.display = 'inline-block';
+
+                } else if (mode === 'compA_userQ') { // Người dùng đọc Q
+                    qLine.style.display = 'none'; // Ẩn câu Q
+                    aLine.style.display = 'flex'; // Hiện câu A
+
+                    toggleBtn.dataset.target = '.q-line';
+                    toggleBtn.textContent = 'Hiện Câu hỏi (Q)';
+
+                    qPracticeBtn.textContent = 'Click để Đọc (Q)';
+                    qPracticeBtn.className = 'practice-btn record';
+                    qPracticeBtn.dataset.action = 'record';
+
+                    aPracticeBtn.textContent = 'Phát Câu trả lời (A)';
+                    aPracticeBtn.className = 'practice-btn play';
+                    aPracticeBtn.dataset.action = 'play';
+
+                    qPracticeBtn.style.display = 'inline-block';
+                    aPracticeBtn.style.display = 'inline-block';
                 }
-                
-                qBtn.style.display = 'inline-block';
-                aBtn.style.display = 'inline-block';
             }
 
-            // === 6. HÀM LUYỆN NÓI & ĐIỀU HƯỚNG (ĐÃ CẬP NHẬT) ===
+            // === 6. HÀM LUYỆN NÓI & ĐIỀU HƯỚNG (ĐÃ SỬA) ===
             
-            // Hàm mới để chuyển câu
             function goToNextPair() {
                 if (currentPairIndex < dialoguePairs.length - 1) {
                     currentPairIndex++;
-                    showPair(currentPairIndex);
+                    showPair(currentPairIndex); // showPair sẽ tự động reset trạng thái
                 } else {
-                    // Khi hoàn thành
-                    alert("Hoàn thành! Bạn đã luyện tập tất cả các câu.");
-                    currentPairIndex = 0; // Quay về câu đầu
+                    alert("Hoàn thành! Bạn đã luyện tập tất cả các câu. Quay về câu đầu.");
+                    currentPairIndex = 0; 
                     showPair(currentPairIndex);
                 }
             }
@@ -513,7 +539,7 @@
                     return;
                 }
 
-                initAudio(); // Khởi tạo audio khi bắt đầu ghi âm
+                initAudio(); 
                 
                 isRecording = true;
                 speechSynthesis.cancel();
@@ -526,25 +552,22 @@
                     button.classList.add('recording');
                 };
 
-                // === LOGIC CỐT LÕI (ĐÃ SỬA) ===
                 recognition.onresult = (event) => {
                     const userText = event.results[0][0].transcript;
                     
-                    // Nếu BẬT chế độ nghiêm khắc
                     if (strictModeCheck.checked) {
                         const normUser = normalizeText(userText);
                         const normCorrect = normalizeText(correctText);
 
+                        // *** LOGIC SO SÁNH ĐÃ SỬA ***
                         if (normUser === normCorrect) {
-                            playSound('correct'); // Phát âm báo đúng
-                            // Thêm độ trễ nhỏ để nghe âm thanh rồi mới chuyển
+                            playSound('correct');
                             setTimeout(goToNextPair, 400); 
                         } else {
-                            playSound('incorrect'); // Phát âm báo sai
+                            playSound('incorrect');
                             displayTranscription(button.closest('.line'), userText, correctText); // Hiển thị lỗi
                         }
                     } else {
-                        // Nếu TẮT chế độ nghiêm khắc (hoạt động như cũ)
                         displayTranscription(button.closest('.line'), userText, correctText);
                     }
                 };
@@ -553,10 +576,16 @@
             }
 
             function displayTranscription(lineEl, userText, correctText) {
+                // Đảm bảo lineEl đang được hiển thị (nếu nó bị ẩn, ta hiển thị nó)
+                lineEl.style.display = 'flex';
+                // Cũng cập nhật nút toggle (nếu có)
+                const pair = lineEl.closest('.dialogue-pair');
+                const toggleBtn = pair.querySelector('.toggle-answer');
+                toggleBtn.textContent = toggleBtn.textContent.replace('Hiện', 'Ẩn');
+
                 const div = document.createElement('div');
                 div.className = 'user-transcription';
                 
-                // So sánh để tô màu (chỉ để hiển thị)
                 const normUser = normalizeText(userText);
                 const normCorrect = normalizeText(correctText);
                 const color = (normUser === normCorrect) ? '#28a745' : '#dc3545';
@@ -589,10 +618,10 @@
                 }
             }
 
-            // === 7. GÁN SỰ KIỆN ===
+            // === 7. GÁN SỰ KIỆN (ĐÃ SỬA) ===
 
             fileInput.addEventListener('change', async (event) => {
-                initAudio(); // Khởi tạo audio khi người dùng chọn file
+                initAudio();
                 contentContainer.innerHTML = 'Đang xử lý...';
                 const files = event.target.files;
                 if (!files.length) {
@@ -629,31 +658,45 @@
                 updateDisplayMode();
             });
 
+            // *** SỬA LỖI QUAN TRỌNG TẠI ĐÂY (Nút Ẩn/Hiện) ***
             contentContainer.addEventListener('click', (event) => {
-                initAudio(); // Khởi tạo audio khi người dùng click vào nội dung
+                initAudio();
                 const target = event.target;
                 const mode = document.querySelector('input[name="practiceMode"]:checked').value;
 
-                if (mode === 'off') {
-                    if (target.classList.contains('toggle-answer')) {
-                        const answerElement = target.nextElementSibling;
-                        if (answerElement && answerElement.classList.contains('answer')) {
-                            if (answerElement.style.display === 'none' || answerElement.style.display === '') {
-                                answerElement.style.display = 'flex';
-                                target.textContent = 'Ẩn Đáp án';
-                            } else {
-                                answerElement.style.display = 'none';
-                                target.textContent = 'Hiện Đáp án';
-                            }
-                        }
+                // Logic cho nút Ẩn/Hiện (dùng cho MỌI CHẾ ĐỘ)
+                if (target.classList.contains('toggle-answer')) {
+                    let lineToToggle;
+
+                    if (mode === 'off') {
+                        // Chế độ 'Tắt': Luôn luôn toggle 'nextElementSibling' (là câu A)
+                        lineToToggle = target.nextElementSibling; 
+                    } else {
+                        // Chế độ 'Luyện tập': Toggle dựa trên 'data-target'
+                        const targetSelector = target.dataset.target;
+                        lineToToggle = target.closest('.dialogue-pair').querySelector(targetSelector);
                     }
 
+                    if (lineToToggle) {
+                        if (lineToToggle.style.display === 'none' || lineToToggle.style.display === '') {
+                            lineToToggle.style.display = 'flex';
+                            target.textContent = target.textContent.replace('Hiện', 'Ẩn'); 
+                        } else {
+                            lineToToggle.style.display = 'none';
+                            target.textContent = target.textContent.replace('Ẩn', 'Hiện');
+                        }
+                    }
+                }
+
+                // Logic nút Phát (chỉ ở chế độ 'Tắt')
+                if (mode === 'off') {
                     if (target.classList.contains('play-btn')) {
                         const textToPlay = target.dataset.text; 
                         playSpeech(textToPlay, 'de-DE');
                     }
                 }
                 
+                // Logic nút Luyện tập (chỉ chạy ở chế độ 'Luyện tập')
                 if (target.classList.contains('practice-btn')) {
                     const action = target.dataset.action;
                     const text = target.dataset.text;
@@ -668,12 +711,11 @@
 
             modeRadios.forEach(radio => {
                 radio.addEventListener('change', () => {
-                    initAudio(); // Khởi tạo audio khi chọn chế độ
+                    initAudio();
                     updateDisplayMode();
                 });
             });
 
-            // Gán hàm mới cho nút "Tiếp theo"
             nextBtn.addEventListener('click', goToNextPair);
 
             prevBtn.addEventListener('click', () => {
